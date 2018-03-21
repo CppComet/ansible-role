@@ -63,9 +63,10 @@
         dest: /etc/letsencrypt/cli.ini
         force: no
 
-    - name: Setting for Let`sEncrypt in cli.ini
+    - name: Setting for Letsencrypt in cli.ini
       template:
         src: nginx/letsencrypt.j2
+        dest: /etc/letsencrypt/cli.ini
        
     - name: Create https
       shell: certbot --config /etc/letsencrypt/cli.ini  certonly --agree-tos

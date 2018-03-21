@@ -1,0 +1,52 @@
+---
+- hosts: all
+  vars:
+    http_port: 80
+    max_clients: 200
+  remote_user: root
+
+  tasks:
+    - name: Update apt cache
+      apt: update_cache=yes
+
+    - name: Download Telegraf
+      get_url: url=http://dl.influxdata.com/telegraf/releases/telegraf_1.3.2-1_amd64.deb dest=/opt/telegraf.deb
+
+    - name: Install Telegraf
+      apt:
+        deb: /opt/telegraf.deb
+
+    - name: Replace IP-server
+      replace:
+        path: /etc/telegraf/telegraf.conf
+        regexp: 'localhost:8086'
+        replace: '{{ iptelegraf }}'
+        backup: no
+
+    - name: Replace password
+      replace:
+        path: /etc/telegraf/telegraf.conf
+        regexp: '# password = "metricsmetricsmetricsmetrics"'
+        replace: 'password = "{{ passtelegraf }}"'
+        backup: no
+
+    - name: Replace login
+      replace:
+        path: /etc/telegraf/telegraf.conf
+        regexp: '# username = "telegraf"'
+        replace: 'username = "{{ usertelegraf }}"'
+        backup: no
+
+    - name: Start telegraf
+      service:
+        service: name=telegraf state=restarted enabled=yes
+
+    - name: Autoload in system Telegraf
+      replace:
+        path: /etc/rc.local
+        regexp: 'exit 0'
+        replace: 'telegraf \nexit 0'
+        backup: no
+
+    - name: reboot
+      shell: reboot&

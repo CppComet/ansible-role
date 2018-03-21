@@ -1,0 +1,81 @@
+user www-data;
+worker_processes 4;
+pid /run/nginx.pid;
+
+events {
+        worker_connections 768;
+        # multi_accept on;
+}
+
+http {
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        # server_tokens off;
+
+        # server_names_hash_bucket_size 64;
+        # server_name_in_redirect off;
+        ##
+        # SSL Settings
+        ##
+
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+        ssl_prefer_server_ciphers on;
+
+        ##
+        # Logging Settings
+        ##
+
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+        ##
+        # Gzip Settings
+        ##
+
+        gzip on;
+        gzip_disable "msie6";
+
+        # gzip_vary on;
+        # gzip_proxied any;
+        # gzip_comp_level 6;
+        # gzip_buffers 16 8k;
+        # gzip_http_version 1.1;
+        # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+$
+
+        ##
+        # Virtual Host Configs
+        ##
+
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+}
+rtmp {
+  server {
+        live on;
+        listen 1935;
+        chunk_size 512;
+        buflen 1s;
+        idle_streams off;
+        application stream {
+            live on;
+                record off;
+                        hls on;
+                        hls_path /tmp/hls;
+                        hls_fragment 2s;
+                        hls_playlist_length 20s;
+                        hls_type live;
+                        hls_fragment_naming sequential;
+                        hls_nested on;
+                        dash on;
+            dash_path /tmp/dash;
+            dash_fragment 2s;
+            dash_playlist_length 20s;
+            dash_nested on;
+          }
+   }
+  }
+

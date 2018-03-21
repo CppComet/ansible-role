@@ -1,0 +1,9 @@
+authenticator = webroot
+post-hook = service nginx reload
+text = True
+domains = {{ server_name }}
+rsa-key-size = 2048 # Or 4096
+server = https://acme-v01.api.letsencrypt.org/directory
+email = notify@{{ server_name }}
+webroot-path = /var/www/letsencrypt/
+

@@ -1,0 +1,83 @@
+---
+- hosts: all
+  vars:
+    http_port: 80
+    max_clients: 200
+  remote_user: root
+
+  tasks:
+    - name: Update apt cache
+      apt: upgrade=yes update_cache=yes
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Restart nginx
+      service:
+        service: name=nginx state=restarted enabled=yes
+
+    - name: Autoload in system Nginx
+      replace:
+        path: /etc/rc.local
+        regexp: 'exit 0'
+        replace: 'service nginx start \nexit 0'
+        backup: no
+
+    - name: Install letsencrypt
+      lineinfile:
+        dest: /etc/apt/sources.list
+        line: 'deb http://ftp.debian.org/debian/ jessie-backports main contrib non-free'
+
+    - name: Update apt cache
+      apt: update_cache=yes
+
+    - name: Install letsencrypt
+      shell: apt-get install certbot -t jessie-backports -y
+
+
+    - name: Configuration default setting for site in nginx
+      template:
+        src: template/default-no-ssl.j2
+        dest: /etc/nginx/sites-available/default
+
+
+    - name: Setting for Letsencrypt Create https
+      file: 
+        path: /var/www/letsencrypt
+        state: directory
+        mode: 0775
+
+    - name: Setting Letsencrypt Create https
+      shell: chgrp www-data /var/www/letsencrypt
+
+    - name: Restart nginx
+      service:
+        service: name=nginx state=restarted enabled=yes
+
+    - name: Restart nginx
+      shell: service nginx restart
+
+
+    - name: ensure file exists
+      copy:
+        content: ""
+        dest: /etc/letsencrypt/cli.ini
+        force: no
+
+    - name: Setting for Let`sEncrypt in cli.ini
+      template:
+        src: template/letsencrypt.j2
+       
+    - name: Create https
+      shell: certbot --config /etc/letsencrypt/cli.ini  certonly --agree-tos
+
+    - name: Setting HTTPS in nginx
+      template: 
+        src: template/nginx.j2
+        dest: /etc/nginx/sites-available/default 
+
+    - name: Restart nginx
+      service:
+        service: name=nginx state=restarted enabled=yes

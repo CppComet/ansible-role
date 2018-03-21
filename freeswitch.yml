@@ -1,0 +1,208 @@
+---
+- hosts: all
+  vars:
+    http_port: 80
+    max_clients: 200
+  remote_user: root
+
+  tasks:
+    - name: Download Key freeswitch
+      shell: wget -O - https://files.freeswitch.org/repo/deb/debian/freeswitch_archive_g0.pub | apt-key add -
+
+    - name: Add line in sources.list
+      lineinfile:
+        dest: /etc/apt/sources.list
+        line: 'deb http://files.freeswitch.org/repo/deb/freeswitch-1.6/ jessie main'
+
+    - name: Update
+      apt: update_cache=yes
+
+    - name: Install Freeswitch
+      apt:
+        name: freeswitch-video-deps-most
+        state: present
+
+    - name: Git config
+      shell: 'git config --global pull.rebase true'
+
+    - name: Git clone freeswitch
+      git:
+        repo: https://freeswitch.org/stash/scm/fs/freeswitch.git
+        dest: /usr/src/freeswitch
+
+    - name: Exec bootstrap.sh -j
+      shell: ./bootstrap.sh -j
+      args:
+        chdir: /usr/src/freeswitch/
+
+    - name: Replace in modules.conf
+      replace:
+        path: /usr/src/freeswitch/modules.conf
+        regexp: '#codecs/mod_isac'
+        replace: 'codecs/mod_isac'
+        backup: no
+
+    - name: Replace in modules.conf
+      replace:
+        path: /usr/src/freeswitch/modules.conf
+        regexp: '#xml_int/mod_xml_curl'
+        replace: 'xml_int/mod_xml_curl'
+        backup: no
+        
+    - name: Replace in modules.conf
+      replace:
+        path: /usr/src/freeswitch/modules.conf
+        regexp: '#xml_int/mod_xml_ldap'
+        replace: 'xml_int/mod_xml_ldap'
+        backup: no
+        
+    - name: Replace in modules.conf
+      replace:
+        path: /usr/src/freeswitch/modules.conf
+        regexp: '#xml_int/mod_xml_radius'
+        replace: 'xml_int/mod_xml_radius'
+        backup: no
+         
+    - name: Delete modules.tmp
+      shell: 'rm -rf /usr/src/freeswitch/modules.tmp'
+
+    - name: .configure
+      shell: ./configure
+      args:
+        chdir: /usr/src/freeswitch/
+
+    - name: Make Freeswitch
+      make:
+        chdir: /usr/src/freeswitch
+
+    - name: Make Freeswitch
+      make:
+        chdir: /usr/src/freeswitch
+        target: install
+
+    - name: Groupadd freeswitch
+      group:
+        name: freeswitch
+        state: present
+
+    - name: Add user Freeswitch
+      shell: adduser --quiet --system --home /usr/local/freeswitch --gecos "FreeSWITCH open source softswitch" --ingroup freeswitch freeswitch --disabled-password
+
+    - name: Permissions
+      shell: chown -R freeswitch:freeswitch /usr/local/freeswitch/
+
+    - name: Permissions
+      shell: chmod -R ug=rwX,o= /usr/local/freeswitch/
+
+    - name: Permissions
+      shell: chmod -R u=rwx,g=rx /usr/local/freeswitch/bin/*
+
+    - name: Sed
+      shell: sed -e "s/EnvironmentFile=-\/etc\/default\/freeswitch/EnvironmentFile=-\/etc\/freeswitch/g" /usr/src/freeswitch/debian/freeswitch-systemd.freeswitch.service | sed -e "s/PIDFile=\/run\/freeswitch\/freeswitch.pid/PIDFile=\/usr\/local\/freeswitch\/run\/freeswitch.pid/g" > /etc/systemd/system/freeswitch.service
+
+    - name: Copied
+      shell: cp /usr/local/freeswitch/bin/freeswitch  /usr/bin/freeswitch
+
+    - name: Create directory /run/freeswitch
+      file:
+        path: /run/freeswitch
+        state: directory
+
+    - name: Copied
+      shell: cp /usr/local/freeswitch/bin/freeswitch  /usr/bin/freeswitch
+
+    - name: Deamon reload
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable freeswitch
+      shell: systemctl enable freeswitch
+
+    - name: Enable freeswitch
+      service:
+        service: name=freeswitch state=restarted enabled=yes
+
+    - name: Setting Modules.conf.xml
+      template:
+        src: template/freeswitch-modulesconfxml.j2
+        dest: /usr/local/freeswitch/conf/autoload_configs/modules.conf.xml
+        
+    - name: Enable freeswitch
+      service:
+        service: name=freeswitch state=restarted enabled=yes
+
+    - name: Setting xml_curl.conf.xml
+      template:
+        src: template/freeswitch-xmlcurlconf.j2
+        dest: /usr/local/freeswitch/conf/autoload_configs/xml_curl.conf.xml
+
+    - name: Setting conference.conf.xml
+      replace:
+        dest: /usr/local/freeswitch/conf/autoload_configs/conference.conf.xml
+        regexp: '<!-- <param name="tts-voice" value="kal16"/> -->'
+        replace: '<!-- <param name="tts-voice" value="kal16"/> -->\n      <param name="auto-record" value="rtmp://{{ rtmp_addr }}"/>'
+
+    - name: Setting conf/dialplan/default.xml
+      replace:
+        dest: /usr/local/freeswitch/conf/dialplan/default.xml
+        regexp: '<context name="default">'
+        replace: '<context name="default">\n    <extension name="comet_conferences">\n      <condition field="destination_number" expression="^([0-9]{1,9}\*[0-9A-z\-_]+)\*([0-9A-z\-_]+)$">\n        <action application="answer"/>\n        <action application="conference" data="$1-${domain_name}@$2"/>\n     </condition>\n    </extension>'
+
+    - name: Setting vars.xml
+      replace:
+        dest: /usr/local/freeswitch/conf/vars.xml
+        regexp: '<X-PRE-PROCESS cmd="set" data="default_password=1234"/>'
+        replace: '<X-PRE-PROCESS cmd="set" data="default_password={{ event_socket_pass }}"/>'
+
+    - name: Setting vars.xml
+      replace:
+        dest: /usr/local/freeswitch/conf/vars.xml
+        regexp: '\$\${local_ip_v4}'
+        replace: "FSdefaultDomain"
+
+    - name: Setting event_socket.conf
+      replace:
+        dest: /usr/local/freeswitch/conf/autoload_configs/event_socket.conf.xml
+        regexp: 'value="::"'
+        replace: 'value="0.0.0.0"'
+
+    - name: Setting event_socket.conf
+      replace:
+        dest: /usr/local/freeswitch/conf/autoload_configs/event_socket.conf.xml
+        regexp: 'value="ClueCon"'
+        replace: 'value="{{ event_socket_pass }}"'
+
+    - name: Setting event_socket.conf
+      replace:
+        dest: /usr/local/freeswitch/conf/autoload_configs/event_socket.conf.xml
+        regexp: '<!--<param name="apply-inbound-acl" value="loopback.auto"/>-->'
+        replace: '<param name="apply-inbound-acl" value="0.0.0.0/32"/>'
+
+    - name: Create directory /usr/local/freeswitch/certs
+      file:
+        path: /usr/local/freeswitch/certs
+        state: directory
+
+    - name: Setting https on freeswitch
+      shell: cat /etc/letsencrypt/live/{{ server_name }}/fullchain.pem > /usr/local/freeswitch/certs/wss.pem
+
+    - name: Setting https on freeswitch
+      shell: cat /etc/letsencrypt/live/{{ server_name }}/privkey.pem >> /usr/local/freeswitch/certs/wss.pem
+
+    - name: Setting https on freeswitch
+      shell: cat /etc/letsencrypt/live/{{ server_name }}/fullchain.pem > /usr/local/freeswitch/certs/dtls-srtp.pem
+
+    - name: Setting https on freeswitch
+      shell: cat /etc/letsencrypt/live/{{ server_name }}/privkey.pem >> /usr/local/freeswitch/certs/dtls-srtp.pem
+
+    - name: Stop freeswitch
+      service:
+        service: name=freeswitch state=stop
+
+    - name: Del DB
+      shell: rm -rf /var/lib/freeswitch/db
+
+    - name: Start freeswitch
+      service:
+        service: name=freeswitch state=start
+

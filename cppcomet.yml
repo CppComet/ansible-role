@@ -46,7 +46,7 @@
       git:
         repo: https://github.com/CppComet/comet-server
         dest: /usr/src/cppcomet
-        version: "{{ git_branch }}"
+        version: "{{ cppcomet_git_branch }}"
  
     - name: cmake
       shell: cmake .

@@ -68,7 +68,7 @@
 
     - name: Setting RTMP
       template:
-         src: template/rtpm.j2
+         src: nginx/rtpm.j2
          dest: /etc/nginx/nginx.conf
 
     - name: Stop nginx

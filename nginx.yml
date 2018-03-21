@@ -1,8 +1,8 @@
 ---
 - hosts: all
   vars:
-    http_port: 80
-    max_clients: 200
+    ws_port: 8087
+    ws_ip: 127.0.0.1
   remote_user: root
 
   tasks:
@@ -35,14 +35,12 @@
 
     - name: Install letsencrypt
       shell: apt-get install certbot -t jessie-backports -y
-
-
+ 
     - name: Configuration default setting for site in nginx
       template:
-        src: template/default-no-ssl.j2
+        src: nginx/default-no-ssl.j2
         dest: /etc/nginx/sites-available/default
-
-
+ 
     - name: Setting for Letsencrypt Create https
       file: 
         path: /var/www/letsencrypt
@@ -58,8 +56,7 @@
 
     - name: Restart nginx
       shell: service nginx restart
-
-
+ 
     - name: ensure file exists
       copy:
         content: ""
@@ -68,14 +65,14 @@
 
     - name: Setting for Let`sEncrypt in cli.ini
       template:
-        src: template/letsencrypt.j2
+        src: nginx/letsencrypt.j2
        
     - name: Create https
       shell: certbot --config /etc/letsencrypt/cli.ini  certonly --agree-tos
 
     - name: Setting HTTPS in nginx
       template: 
-        src: template/nginx.j2
+        src: nginx/nginx.j2
         dest: /etc/nginx/sites-available/default 
 
     - name: Restart nginx

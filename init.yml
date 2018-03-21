@@ -1,0 +1,9 @@
+---
+- hosts: all
+  remote_user: root
+  tasks:
+  - name: Update apt cache
+    apt: update_cache=yes
+    
+  - name: install htop and git
+    apt: name=htop,git,mc,nano,wget

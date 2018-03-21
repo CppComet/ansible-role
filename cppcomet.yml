@@ -34,7 +34,7 @@
 
     - name: Installing deps
       apt:
-        name: cmake,make,cpp,gcc,libssl-dev,g++,nginx,pkg-config,libmariadbclient-dev-compat,mysql-client,flex,mailutils,uuid-dev,git
+        name: cmake,make,cpp,gcc,libssl-dev,g++,nginx,pkg-config,libmariadbclient-dev-compat,mysql-client,flex,mailutils,uuid-dev,git,wget
         state: present
         
     - name: Clean CppComet dir
@@ -65,7 +65,7 @@
  
     - name: set comet.ini
       template:
-        src: template/comet.ini.j2
+        src: cppcomet/comet.ini.j2
         dest: /etc/comet-server/comet.ini
         
     - name: add as service

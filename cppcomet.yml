@@ -30,7 +30,7 @@
     - name: Update
       apt: update_cache=yes
 
-    - name: Install deps
+    - name: Installing deps
       apt:
         name: cmake,make,cpp,gcc,libssl-dev,g++,nginx,pkg-config,libmariadbclient-dev-compat,mysql-client,flex,mailutils,uuid-dev,git
         state: present
@@ -39,6 +39,7 @@
       git:
         repo: https://github.com/CppComet/comet-server
         dest: /usr/src/cppcomet
+        version: alfa
  
     - name: cmake
       shell: cmake .

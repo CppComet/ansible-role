@@ -23,8 +23,9 @@
     cppcomet_mysqlproxy_thread_num: 4
     cppcomet_mysqlproxy_port: 3308
     cppcomet_log_level: 200
-    cppcomet_password: 1234
+    cppcomet_password: root
     cppcomet_fragment_buf_size: 600
+    cppcomet_git_branch: master
   remote_user: root
 
   tasks:
@@ -35,12 +36,17 @@
       apt:
         name: cmake,make,cpp,gcc,libssl-dev,g++,nginx,pkg-config,libmariadbclient-dev-compat,mysql-client,flex,mailutils,uuid-dev,git
         state: present
-
+        
+    - name: Clean CppComet dir
+      file:
+        state: absent
+        path: "/usr/src/cppcomet"
+        
     - name: Git clone CppComet
       git:
         repo: https://github.com/CppComet/comet-server
         dest: /usr/src/cppcomet
-        version: alfa
+        version: "{{ git_branch }}"
  
     - name: cmake
       shell: cmake .

@@ -6,7 +6,7 @@
     cppcomet_base_dir: static
     cppcomet_buf_size: 10384
     cppcomet_fragment_buf_max_size: 10384
-    cppcomet_answer_buf_size: 600
+    cppcomet_answer_buf_size: 1000000
     cppcomet_db_host: localhost
     cppcomet_db_user: root
     cppcomet_db_password: root
@@ -24,6 +24,7 @@
     cppcomet_mysqlproxy_port: 3308
     cppcomet_log_level: 200
     cppcomet_password: 1234
+    cppcomet_fragment_buf_size: 600
   remote_user: root
 
   tasks:

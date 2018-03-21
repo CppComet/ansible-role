@@ -32,7 +32,7 @@
 
     - name: Install deps
       apt:
-        name: cmake, make, cpp, gcc, libssl-dev, g++, nginx, pkg-config, libmariadbclient-dev-compat, mysql-client, flex, mailutils, uuid-dev, git
+        name: cmake,make,cpp,gcc,libssl-dev,g++,nginx,pkg-config,libmariadbclient-dev-compat,mysql-client,flex,mailutils,uuid-dev,git
         state: present
 
     - name: Git clone CppComet

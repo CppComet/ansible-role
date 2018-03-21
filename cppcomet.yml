@@ -1,0 +1,77 @@
+---
+- hosts: all
+  vars:
+    cppcomet_node_name: n1
+    cppcomet_useQueryLoger: false
+    cppcomet_base_dir: static
+    cppcomet_buf_size: 10384
+    cppcomet_fragment_buf_max_size: 10384
+    cppcomet_answer_buf_size: 600
+    cppcomet_db_host: localhost
+    cppcomet_db_user: root
+    cppcomet_db_password: root
+    cppcomet_db_name: comet_db
+    cppcomet_db_port: 3306
+    cppcomet_ws_ip: 0.0.0.0
+    cppcomet_ws_thread_num: 4
+    cppcomet_statistics: 10
+    cppcomet_ws_port: 8087
+    cppcomet_cometql_ip: 0.0.0.0
+    cppcomet_cometql_thread_num: 4 
+    cppcomet_cometql_port: 3307
+    cppcomet_mysqlproxy_ip: 0.0.0.0
+    cppcomet_mysqlproxy_thread_num: 4
+    cppcomet_mysqlproxy_port: 3308
+    cppcomet_log_level: 200
+    cppcomet_password: 1234
+  remote_user: root
+
+  tasks:
+    - name: Update
+      apt: update_cache=yes
+
+    - name: Install deps
+      apt:
+        name: cmake make cpp gcc libssl-dev g++ nginx pkg-config libmariadbclient-dev-compat mysql-client flex mailutils uuid-dev git
+        state: present
+
+    - name: Git clone CppComet
+      git:
+        repo: https://github.com/CppComet/comet-server
+        dest: /usr/src/cppcomet
+ 
+    - name: cmake
+      shell: cmake .
+      args:
+        chdir: /usr/src/cppcomet/
+
+    - name: make
+      shell: make 
+      args:
+        chdir: /usr/src/cppcomet/
+
+    - name: make install
+      shell: make install
+      args:
+        chdir: /usr/src/cppcomet/
+ 
+    - name: set comet.ini
+      template:
+        src: template/comet.ini.j2
+        dest: /etc/comet-server/comet.ini
+        
+    - name: add as service
+      shell: cp ./comet.service /etc/systemd/system
+      args:
+        chdir: /usr/src/cppcomet/
+        
+    - name: systemctl daemon-reload 
+      shell: systemctl daemon-reload 
+      
+    - name: systemctl enable comet.service
+      shell: systemctl enable comet.service
+       
+    - name: Start CppComet
+      service:
+        service: name=comet.service state=start
+
